@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Commander Deck Builder</title>
+  <style>
+
+    :root{
+      --bg:#0a0f1a;
+      --panel:#0f172a;
+      --panel-2:#111b33;
+      --border:#23304f;
+      --text:#e6edf7;
+      --muted:#a8b3c7;
+
+      /* Magic 5-colors */
+      --W:#f8f1d4;
+      --U:#7cc4ff;
+      --B:#b7a7ff;
+      --R:#ff8272;
+      --G:#7be495;
+      --C:#cbd5e1;
+      --M:#f2c94c; /* multicolor / gold */
+    }
+
+    body{
+      font-family: system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(1200px 800px at 10% -10%, rgba(124,196,255,0.08), transparent 60%),
+        radial-gradient(1000px 700px at 110% 0%, rgba(255,130,114,0.08), transparent 55%),
+        radial-gradient(900px 700px at 50% 120%, rgba(123,228,149,0.08), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      margin: 0; padding: 1.5rem;
+    }
+
+    h1, h2 { color: #f8fafc; margin: 0.4rem 0; letter-spacing: .3px; }
+    h1{ font-size:1.7rem; }
+    h2{ font-size:1.25rem; }
+
+    .card{
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 35px rgba(0,0,0,0.45);
+      position: relative;
+      overflow: hidden;
+    }
+    /* five-color stripe on top of cards */
+    .card::before{
+      content:"";
+      position:absolute; inset:0 0 auto 0; height:4px;
+      background: linear-gradient(90deg,var(--W),var(--U),var(--B),var(--R),var(--G));
+      opacity:.9;
+    }
+
+    label{
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    input[type="number"], input[type="text"], textarea, select{
+      width: 100%;
+      padding: 0.6rem;
+      border-radius: 0.65rem;
+      border: 1px solid var(--border);
+      background: #0a1226;
+      color: var(--text);
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    input:focus, textarea:focus, select:focus{
+      border-color:#3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+    }
+
+    button{
+      margin-top: 0.75rem;
+      padding: 0.6rem 1.1rem;
+      border-radius: 0.7rem;
+      border: 1px solid var(--border);
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--text);
+      background: linear-gradient(180deg,#334155,#1f2937);
+      transition: transform 0.08s ease, filter 0.2s ease, opacity 0.2s ease, background .2s ease;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    button:hover{ transform: translateY(-1px); filter: brightness(1.08); }
+    button:disabled{ opacity:0.6; cursor:not-allowed; transform:none; filter:none; }
+
+    .btn-danger{
+      color:#fecaca;
+      background: linear-gradient(180deg,#3f2430,#27131a);
+      border: 1px solid rgba(239,68,68,0.6);
+      box-shadow: 0 8px 20px rgba(239,68,68,0.25);
+    }
+    .btn-ghost{
+      background: transparent;
+      border: 1px solid var(--border);
+      margin-top: 0;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.7rem;
+      box-shadow:none;
+      color: var(--muted);
+    }
+    .btn-ghost:hover{ background:#0a1226; }
+
+    .row { display:flex; flex-wrap:wrap; gap: 1rem; }
+    .col { flex: 1 1 220px; }
+
+    .pill-group{
+      display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;
+    }
+    .pill-group label{
+      background:#0a1226;
+      padding:0.3rem 0.8rem;
+      border-radius:999px;
+      cursor:pointer;
+      margin:0;
+      color:var(--text);
+      user-select:none;
+      font-size:0.78rem;
+      border:1px solid var(--border);
+    }
+    .pill-group input{ margin-right:0.45rem; transform:scale(1.05); }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:1rem;
+      font-size:0.85rem;
+    }
+    th, td{
+      text-align:left;
+      padding:0.55rem;
+      border-bottom:1px solid var(--border);
+      vertical-align:top;
+    }
+    th{
+      color:var(--muted);
+      position:sticky; top:0;
+      background: #0f172a;
+      z-index:1;
+    }
+    tr:hover td{ background:#0a1226; }
+
+    .bar-bg{
+      background:#0a1226;
+      height:9px; border-radius:5px; overflow:hidden; width:100%;
+      border:1px solid var(--border);
+    }
+    .bar-fill{
+      height:100%;
+      background: linear-gradient(90deg,var(--G),var(--U),var(--B));
+    }
+
+    .output{
+      background:#050913;
+      padding:1rem;
+      border-radius:0.7rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space:pre-wrap;
+      max-height:420px;
+      overflow-y:auto;
+      border:1px solid var(--border);
+    }
+
+    .badge{
+      font-size:0.7rem;
+      padding:2px 6px;
+      border-radius:5px;
+      background:#18233f;
+      margin-right:4px;
+      display:inline-block;
+      margin-bottom:2px;
+      border:1px solid var(--border);
+      color:var(--text);
+    }
+    .badge.land{ background: #1a243d; }
+    .badge.ramp{ background: rgba(123,228,149,0.15); border-color: rgba(123,228,149,0.45);}
+    .badge.draw{ background: rgba(124,196,255,0.15); border-color: rgba(124,196,255,0.45);}
+    .badge.inter{ background: rgba(255,130,114,0.15); border-color: rgba(255,130,114,0.45);}
+    .badge.counter{ background: rgba(183,167,255,0.15); border-color: rgba(183,167,255,0.45);}
+    .badge.gold{ background: rgba(242,201,76,0.18); border-color: rgba(242,201,76,0.55); color:#ffe8a3;}
+
+    .muted{ color:var(--muted); font-size:0.9rem; }
+
+    #footer-credit{
+      position: fixed; right: 0.9rem; bottom: 0.6rem;
+      font-size: 0.75rem; color: #7d889f; opacity: 0.9; pointer-events:none;
+    }
+
+    /* Autocomplete */
+    .ac-wrap{ position:relative; }
+    .ac-box{
+      display:none; width:100%; margin-top:6px;
+      background:#0a1226; border:1px solid var(--border); border-radius:0.7rem;
+      box-shadow:0 12px 25px rgba(0,0,0,0.55);
+      max-height:260px; overflow-y:auto;
+    }
+    .ac-item{
+      padding:0.6rem 0.75rem; cursor:pointer; border-bottom:1px solid var(--border);
+      font-size:0.96rem;
+    }
+    .ac-item:last-child{ border-bottom:none; }
+    .ac-item:hover, .ac-item.active{ background:#0f172a; }
+
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Commander Deck Builder</h1>
+</div>
+
+  <div class="card">
+    <h2>1. Construtor de Deck (Smart Scryfall)</h2>
+    <div class="row">
+      <div class="col ac-wrap">
+        <label>Nome da Carta (inglês)</label>
+        <input type="text" id="builderName" placeholder="Digite parte do nome...">
+        <div id="acBuilder" class="ac-box"></div>
+      </div>
+      <div class="col" style="flex:0 0 90px;">
+        <label>Qtd</label>
+        <input type="number" id="builderQty" value="1" min="1">
+      </div>
+      <div class="col">
+        <label>Override Manual (opcional)</label>
+        <div class="pill-group">
+          <label><input type="checkbox" id="force_ramp">Ramp</label>
+          <label><input type="checkbox" id="force_ramp_burst">Ramp Burst</label>
+          <label><input type="checkbox" id="force_draw">Draw</label>
+          <label><input type="checkbox" id="force_cantrip">Cantrip</label>
+          <label><input type="checkbox" id="force_wheel">Wheel</label>
+          <label><input type="checkbox" id="force_interaction">Interação</label>
+          <label><input type="checkbox" id="force_counterspell">Counterspell</label>
+          <label><input type="checkbox" id="force_stax">Stax/Tax</label>
+          <label><input type="checkbox" id="force_recursion">Recursão</label>
+          <label><input type="checkbox" id="force_wincon">Wincon</label>
+          <label><input type="checkbox" id="force_comboA">Combo A</label>
+          <label><input type="checkbox" id="force_comboB">Combo B</label>
+          <label><input type="checkbox" id="force_comboC">Combo C</label>
+          <label><input type="checkbox" id="force_removal_single">Remoção pontual</label>
+          <label><input type="checkbox" id="force_removal_global">Remoção global</label>
+          <label><input type="checkbox" id="force_mana_rock">Pedra de mana</label>
+          <label><input type="checkbox" id="force_protection">Proteção</label>
+          <label><input type="checkbox" id="force_tutor">Tutor</label>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnAdd" onclick="addCardSmart()">Adicionar carta</button>
+    <button class="btn-danger" onclick="clearDeck()">Limpar deck</button>
+
+    <div style="margin-top: 1rem;">
+      <details>
+        <summary class="muted">Importar lista em texto (nomes, um por linha)</summary>
+        <textarea id="batchInput" style="margin-top:0.5rem; height:110px;" placeholder="Sol Ring&#10;Arcane Signet&#10;Forest"></textarea>
+        <button class="btn-ghost" onclick="batchImport()">Importar lote via Scryfall (1x cada)</button>
+      </details>
+    </div>
+
+    <div class="row" style="margin-top:0.8rem;">
+      <div class="col"><button class="btn-ghost" onclick="exportDeckCSV()">Exportar deck (CSV)</button></div>
+      <div class="col"><button class="btn-ghost" onclick="exportReportHTML()">Exportar relatório (HTML)</button></div>
+      <div class="col"><button class="btn-ghost" onclick="exportDeckJSON()">Exportar deck (JSON completo)</button></div>
+    </div>
+
+    <div id="deckTableContainer"></div>
+    <div style="margin-top:1rem;">
+      <details>
+        <summary style="color:var(--muted); cursor:pointer; font-weight:700;">Edicao em massa por filtro</summary>
+        <div style="margin-top:0.75rem;">
+          <div class="row">
+            <div class="col">
+              <label>Filtrar por tipo</label>
+              <select id="massType">
+                <option value="any">Qualquer</option>
+                <option value="land">Terreno</option>
+                <option value="creature">Criatura</option>
+                <option value="artifact">Artefato</option>
+                <option value="enchantment">Encantamento</option>
+                <option value="instant">Instantanea</option>
+                <option value="sorcery">Feitico</option>
+                <option value="planeswalker">Planeswalker</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>Filtrar por tag atual</label>
+              <select id="massRole">
+                <option value="any">Qualquer</option>
+                <option value="ramp">Ramp</option>
+                <option value="draw">Draw</option>
+                <option value="interaction">Interacao</option>
+                <option value="counter">Counterspell</option>
+                <option value="tutor">Tutor</option>
+                <option value="protection">Protecao</option>
+                <option value="wincon">Wincon</option>
+                <option value="comboA">Combo A</option>
+                <option value="comboB">Combo B</option>
+                <option value="comboC">Combo C</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>CMC entre</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="number" id="massCMCmin" placeholder="Min" value="0" min="0">
+                <input type="number" id="massCMCmax" placeholder="Max" value="99" min="0">
+              </div>
+            </div>
+            <div class="col">
+              <label>Busca por nome</label>
+              <input type="text" id="massSearch" placeholder="ex: ritual, signet, wrath">
+            </div>
+          </div>
+
+          <button class="btn-ghost" onclick="applyMassFilter()">Aplicar filtro</button>
+
+          <div id="massList" style="margin-top:0.75rem;"></div>
+
+          <div id="massActions" style="display:none; margin-top:0.75rem;">
+            <label>Acoes para as cartas selecionadas</label>
+            <div class="pill-group">
+              <label><input type="checkbox" id="mass_set_isLand">Terreno</label>
+              <label><input type="checkbox" id="mass_set_ramp">Ramp</label>
+              <label><input type="checkbox" id="mass_set_manaRock">Mana Rock</label>
+              <label><input type="checkbox" id="mass_set_draw">Draw</label>
+              <label><input type="checkbox" id="mass_set_interaction">Interacao</label>
+              <label><input type="checkbox" id="mass_set_counter">Counterspell</label>
+              <label><input type="checkbox" id="mass_set_tutor">Tutor</label>
+              <label><input type="checkbox" id="mass_set_protection">Protecao</label>
+              <label><input type="checkbox" id="mass_set_wincon">Wincon</label>
+              <label><input type="checkbox" id="mass_set_comboA">Combo A</label>
+              <label><input type="checkbox" id="mass_set_comboB">Combo B</label>
+              <label><input type="checkbox" id="mass_set_comboC">Combo C</label>
+            </div>
+            <div class="row" style="margin-top:0.5rem;">
+              <div class="col"><button onclick="massApplyTags(true)" style="width:100%;">Marcar tags selecionadas</button></div>
+              <div class="col"><button class="btn-danger" onclick="massApplyTags(false)" style="width:100%;">Desmarcar tags selecionadas</button></div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div id="rawPanel" class="output" style="margin-top:0.75rem; display:none;"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Comandante</h2>
+    <div class="row">
+      <div class="col ac-wrap">
+        <label>Nome (inglês)</label>
+        <input type="text" id="cmdName" placeholder="Digite parte do nome...">
+        <div id="acCmd" class="ac-box"></div>
+        <button class="btn-ghost" onclick="fetchCommanderData()">Buscar comandante no Scryfall</button>
+      </div>
+      <div class="col" style="flex:0 0 110px;">
+        <label>CMC</label>
+        <input type="number" id="cmdCMC" value="4" min="0">
+      </div>
+      <div class="col">
+        <label>Requisito mínimo de fontes por cor (auto do comandante, ajustável)</label>
+        <div class="row">
+          <div class="col"><label>W</label><input type="number" id="reqW" value="0" min="0" max="6"></div>
+          <div class="col"><label>U</label><input type="number" id="reqU" value="0" min="0" max="6"></div>
+          <div class="col"><label>B</label><input type="number" id="reqB" value="0" min="0" max="6"></div>
+          <div class="col"><label>R</label><input type="number" id="reqR" value="0" min="0" max="6"></div>
+          <div class="col"><label>G</label><input type="number" id="reqG" value="0" min="0" max="6"></div>
+        </div>
+      </div>
+    </div>
+    <div id="cmdStats" class="muted" style="margin-top:0.5rem;"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Diagnóstico Avançado de Mana Base</h2>
+    <div class="row">
+      <div class="col">
+        <label>Turno-alvo para consistência</label>
+        <input type="number" id="manaTargetTurn" value="3" min="1" max="8">
+      </div>
+      <div class="col">
+        <label>Modo de análise de cor</label>
+        <select id="manaMode">
+          <option value="sim">Via simulação (do deck inteiro)</option>
+          <option value="fast">Monte Carlo rápido só de mana</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>Amostras rápidas (modo fast)</label>
+        <input type="number" id="manaFastSamples" value="20000" min="2000" max="200000">
+      </div>
+    </div>
+    <button onclick="runManaDiagnostics()">Rodar diagnóstico de mana</button>
+    <div id="manaDiagOut" class="output" style="margin-top:0.75rem;">Aguardando diagnóstico...</div>
+  </div>
+
+  <div class="card">
+    <h2>4. Simulação (Monte Carlo)</h2>
+    <div class="row">
+      <div class="col">
+        <label>Jogos simulados</label>
+        <input type="number" id="simGames" value="12000" min="200">
+      </div>
+      <div class="col">
+        <label>Turno máximo</label>
+        <input type="number" id="simMaxTurn" value="8" min="3" max="15">
+      </div>
+      <div class="col">
+        <label>Faixa aceitável de terrenos na mão (London Mulligan)</label>
+        <div style="display:flex; gap:0.5rem;">
+          <input type="number" id="minLands" value="2" placeholder="Min">
+          <input type="number" id="maxLands" value="5" placeholder="Max">
+        </div>
+        <small class="muted">Até 3 mulligans buscando a melhor mão pela pontuação.</small>
+      </div>
+      <div class="col">
+        <label><input type="checkbox" id="onThePlay" checked> Jogando na play (sem compra no T1)</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Estilo de keep (pontuação)</label>
+        <select id="keepStyle">
+          <option value="balanced">Balanced (midrange)</option>
+          <option value="turbo">Turbo/Combo</option>
+          <option value="grindy">Grindy/Control</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>Peso de mulligan agressivo</label>
+        <input type="number" id="keepAggro" value="1.0" min="0.5" max="2.0" step="0.1">
+      </div>
+    </div>
+
+    <button onclick="runSimulation()">Rodar simulação</button>
+    <div class="row" style="margin-top:0.5rem;">
+      <div class="col"><button class="btn-ghost" onclick="runSensitivity('plus_land')">Teste rápido: +1 Land virtual</button></div>
+      <div class="col"><button class="btn-ghost" onclick="runSensitivity('minus_land')">Teste rápido: -1 Land virtual</button></div>
+      <div class="col"><button class="btn-ghost" onclick="runSensitivity('plus_rock')">Teste rápido: +1 Mana Rock virtual</button></div>
+    </div>
+
+    <div id="simStatus" class="muted" style="margin-top:0.5rem;"></div>
+  
+  <div class="card">
+    <h2>Analise Hipergeometrica (Odds Exatas)</h2>
+    <p class="muted" style="margin-top:0.25rem">
+      Calcula a chance teorica de comprar pelo menos X cartas de um grupo ate um turno alvo.
+      Usa distribuicao hipergeometrica (sem simulacao).
+    </p>
+    <div class="row">
+      <div class="col">
+        <label>Grupo de cartas (usa suas tags)</label>
+        <select id="hgGroup">
+          <option value="lands">Terrenos</option>
+          <option value="ramp">Ramps (rocks/dorks/spells)</option>
+          <option value="draw">Draw</option>
+          <option value="interaction">Interacao / Remocao</option>
+          <option value="counter">Counterspell</option>
+          <option value="tutor">Tutor</option>
+          <option value="comboA">Combo A</option>
+          <option value="comboB">Combo B</option>
+          <option value="comboC">Combo C</option>
+          <option value="wincon">Wincon</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>Copias no deck (K)</label>
+        <input type="number" id="hgK" value="0" min="0">
+        <small class="muted">Preenchido automaticamente ao mudar o grupo (voce pode ajustar).</small>
+      </div>
+      <div class="col">
+        <label>Alvo: pelo menos X copias</label>
+        <input type="number" id="hgX" value="1" min="1">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:0.5rem;">
+      <div class="col">
+        <label>Turno alvo</label>
+        <input type="number" id="hgTurn" value="3" min="1">
+      </div>
+      <div class="col">
+        <label>Voce esta ...</label>
+        <select id="hgOnThePlay">
+          <option value="play">No play (nao compra T1)</option>
+          <option value="draw">No draw (compra T1)</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>Cartas vistas ate o turno (n)</label>
+        <input type="number" id="hgN" value="9" min="0">
+        <small class="muted">Calculado automaticamente, mas voce pode sobrescrever.</small>
+      </div>
+    </div>
+
+    <button onclick="runHypergeo()">Calcular Odds</button>
+    <div id="hgOut" class="output" style="margin-top:0.75rem">Selecione um grupo e calcule.</div>
+  </div>
+
+
+  <div class="card">
+    <h2>Combos (Commander Spellbook)</h2>
+    <p class="muted" style="margin-top:0.25rem">
+      Encontra combos existentes no seu deck usando a base do Commander Spellbook.
+      Requer internet.
+    </p>
+    <div class="row">
+      <div class="col">
+        <label>Formato</label>
+        <select id="sbFormat">
+          <option value="commander">EDH / Commander</option>
+          <option value="cedh">cEDH (mesmo banco, so muda filtro interno)</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>Min pecas</label>
+        <input type="number" id="sbMinPieces" value="2" min="2" max="5">
+      </div>
+      <div class="col">
+        <label>Max pecas</label>
+        <input type="number" id="sbMaxPieces" value="4" min="2" max="6">
+      </div>
+    </div>
+    <button onclick="runSpellbook()">Buscar combos no deck</button>
+    <button class="btn-ghost" onclick="applySpellbookTags()">Marcar pecas (A/B/C) no deck</button>
+    <div id="sbStatus" class="muted" style="margin-top:0.5rem;"></div>
+    <div id="sbOut" class="output" style="margin-top:0.75rem">Nenhuma busca ainda.</div>
+  </div>
+
+</div>
+
+  <div class="card">
+    <h2>Resultados</h2>
+    <div id="textResults" class="output">Resultados aparecerão aqui...</div>
+    <div id="charts" style="margin-top:1rem;"></div>
+  </div>
+
+  <div class="card">
+    <h2>5. Distribuição hipergeométrica (pontual)</h2>
+    <p class="muted">Checagem rápida de alvo: X ~ Hipergeométrica(N, K, n).</p>
+    <div class="row">
+      <div class="col"><label>N (deck)</label><input id="hypN" type="number" value="99"></div>
+      <div class="col"><label>K (sucesso)</label><input id="hypK" type="number" value="20"></div>
+      <div class="col"><label>n (compras)</label><input id="hypn" type="number" value="9"></div>
+      <div class="col"><label>k mínimo</label><input id="hypkmin" type="number" value="2"></div>
+    </div>
+    <button onclick="doHypergeom()">Calcular</button>
+    <div id="hypOut" class="output" style="margin-top:0.75rem;"></div>
+  </div>
+
+  
+  <!-- Modal de Edicao de Carta -->
+  <div id="editModalBackdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9998;"></div>
+  <div id="editModal" style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(520px,92vw); z-index:9999;">
+    <div class="card" style="margin:0;">
+      <h2 style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Editar carta</span>
+        <button class="btn-ghost" style="margin:0; font-weight:700;" onclick="closeEditModal()">Fechar</button>
+      </h2>
+      <div class="muted" id="editModalTitle" style="margin-bottom:0.5rem;"></div>
+
+      <div class="row">
+        <div class="col" style="flex:0 0 100px;">
+          <label>Qtd</label>
+          <input type="number" id="editQty" min="1" value="1">
+        </div>
+        <div class="col">
+          <label>CMC (somente leitura)</label>
+          <input type="number" id="editCMC" disabled>
+        </div>
+      </div>
+
+      <label style="margin-top:0.75rem;">Tags / Funcoes (marque o que se aplica)</label>
+      <div class="pill-group" style="margin-top:0.25rem;">
+        <label><input type="checkbox" id="edit_isLand">Terreno</label>
+        <label><input type="checkbox" id="edit_ramp">Ramp</label>
+        <label><input type="checkbox" id="edit_manaRock">Mana Rock</label>
+        <label><input type="checkbox" id="edit_draw">Draw</label>
+        <label><input type="checkbox" id="edit_interaction">Interacao</label>
+        <label><input type="checkbox" id="edit_counter">Counterspell</label>
+        <label><input type="checkbox" id="edit_removalSingle">Remocao Single</label>
+        <label><input type="checkbox" id="edit_removalGlobal">Remocao Global</label>
+        <label><input type="checkbox" id="edit_tutor">Tutor</label>
+        <label><input type="checkbox" id="edit_protection">Protecao</label>
+        <label><input type="checkbox" id="edit_wincon">Wincon</label>
+        <label><input type="checkbox" id="edit_comboA">Combo A</label>
+        <label><input type="checkbox" id="edit_comboB">Combo B</label>
+        <label><input type="checkbox" id="edit_comboC">Combo C</label>
+      </div>
+
+      <div class="row" style="margin-top:0.75rem;">
+        <div class="col">
+          <button onclick="saveEditModal()" style="width:100%;">Salvar alteracoes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div id="footer-credit">Victor Chaves Machado</div>
+
+<script>
+/* ---------------- Estado ---------------- */
+let deck = [];
+let commander = null;
+
+/* ---------------- Cache / Fetch ---------------- */
+const SCRYFALL_CACHE_KEY = "cmdLab_scryfall_cache_v15";
+const DECK_CACHE_KEY = "cmdLab_deck_v15";
+
+function getCache(){ try{return JSON.parse(localStorage.getItem(SCRYFALL_CACHE_KEY)||"{}");}catch{return{};} }
+function setCache(cache){ localStorage.setItem(SCRYFALL_CACHE_KEY, JSON.stringify(cache)); }
+
+async function fetchScryfall(name){
+  const trimmed=name.trim(); if(!trimmed) throw new Error("Nome vazio.");
+  const cache=getCache(); const key=trimmed.toLowerCase();
+  if(cache[key]) return cache[key];
+
+  let res=await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(trimmed)}&include_extras=true&include_variations=true`);
+  if(!res.ok) res=await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(trimmed)}&include_extras=true&include_variations=true`);
+  if(!res.ok) throw new Error(`Carta não encontrada: ${trimmed}`);
+  const card=await res.json();
+  cache[key]=card; setCache(cache);
+  return card;
+}
+
+async function fetchAutocomplete(q){
+  const res=await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(q)}`);
+  const data=await res.json();
+  return (data.data||[]).slice(0,20);
+}
+
+/* ---------------- Utils ---------------- */
+function manaSymbolsFromCost(mana_cost){
+  const out={W:0,U:0,B:0,R:0,G:0};
+  if(!mana_cost) return out;
+  const matches=mana_cost.match(/\{([^}]+)\}/g)||[];
+  for(const m of matches){
+    const sym=m.replace(/[{}]/g,"");
+    if(out[sym]!==undefined) out[sym]++;
+    else if(sym.includes("/")){
+      if(sym.includes("W")) out.W++;
+      if(sym.includes("U")) out.U++;
+      if(sym.includes("B")) out.B++;
+      if(sym.includes("R")) out.R++;
+      if(sym.includes("G")) out.G++;
+    }
+  }
+  return out;
+}
+function isBasicLandName(name){
+  const n=(name||"").toLowerCase();
+  if(n.includes("plains")) return "W";
+  if(n.includes("island")) return "U";
+  if(n.includes("swamp")) return "B";
+  if(n.includes("mountain")) return "R";
+  if(n.includes("forest")) return "G";
+  if(n.includes("wastes")) return "C";
+  return null;
+}
+function parseManaProduction(oracle_text){
+  const txt=(oracle_text||"").toLowerCase();
+  const profile={W:0,U:0,B:0,R:0,G:0,C:0,ANY:false};
+  if(txt.includes("any color")||txt.includes("of any color")||txt.includes("mana of any color")){ profile.ANY=true; return profile; }
+  const addParts=(oracle_text||"").match(/Add\s+([^\n\.]+)/gi)||[];
+  for(const part of addParts){
+    const syms=part.match(/\{([WUBRGC])\}/g)||[];
+    syms.forEach(s=>{
+      const c=s.replace(/[{}]/g,"");
+      if(profile[c]!==undefined) profile[c]=1;
+    });
+  }
+  return profile;
+}
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+/* ---------------- Tagging / análise via Scryfall ---------------- */
+function analyzeCard(card, manualRoles={}){
+  const typeLine=(card.type_line||"").toLowerCase();
+  const oracle=(card.oracle_text||"").toLowerCase();
+  const manaCost=card.mana_cost||"";
+
+  const isLand=typeLine.includes("land");
+  const isCreature=typeLine.includes("creature");
+  const isArtifact=typeLine.includes("artifact");
+  const isEnchantment=typeLine.includes("enchantment");
+  const isInstant=typeLine.includes("instant");
+  const isSorcery=typeLine.includes("sorcery");
+  const isPlaneswalker=typeLine.includes("planeswalker");
+
+  let manaProfile={W:0,U:0,B:0,R:0,G:0,C:0,ANY:false};
+  if(isLand){
+    if(card.produced_mana && card.produced_mana.length){
+      card.produced_mana.forEach(c=>{ if(manaProfile[c]!==undefined) manaProfile[c]=1; });
+    }
+    const basic=isBasicLandName(card.name); if(basic) manaProfile[basic]=1;
+    if(oracle.includes("any color")) manaProfile.ANY=true;
+  } else {
+    manaProfile=parseManaProduction(card.oracle_text);
+  }
+  const isManaSource=isLand||manaProfile.ANY||manaProfile.W||manaProfile.U||manaProfile.B||manaProfile.R||manaProfile.G||manaProfile.C;
+
+  const isBurst=oracle.includes("add {") && (isInstant||isSorcery) && !oracle.includes("search your library for a land");
+  const createsTreasure=oracle.includes("create") && oracle.includes("treasure");
+  const rampBurstAuto=isBurst||createsTreasure;
+
+  const isLandRampSpell=(isSorcery||isInstant)&&oracle.includes("search your library")&&oracle.includes("land")&&oracle.includes("battlefield");
+  const entersTapped=oracle.includes("tapped")&&oracle.includes("battlefield");
+
+  let rampRepeatable=false, rampDelayed=false, rampBurst=false;
+  if(isLandRampSpell){
+    rampDelayed=entersTapped; rampRepeatable=!entersTapped;
+  } else if(isManaSource && !isLand){
+    if(isCreature) rampDelayed=true;
+    else { rampDelayed=oracle.includes("enters")&&oracle.includes("tapped"); rampRepeatable=!rampDelayed; }
+  }
+  rampBurst=rampBurstAuto || manualRoles.ramp_burst;
+
+  // Funções (auto + override)
+  let roleCounterspell=manualRoles.counterspell || (oracle.includes("counter target") && oracle.includes("spell"));
+  let roleRamp=manualRoles.ramp||rampRepeatable||rampDelayed;
+  let roleDraw=manualRoles.draw||oracle.includes("draw a card")||oracle.includes("draw cards");
+  let roleCantrip=manualRoles.cantrip||((oracle.includes("draw a card")||oracle.includes("investigate")) && (card.cmc||0)<=2);
+  let roleWheel=manualRoles.wheel||oracle.includes("each player")&&(oracle.includes("draw")||oracle.includes("discard"))&&oracle.includes("cards");
+  let roleInteraction=manualRoles.interaction||((isInstant||isSorcery)&&(
+    oracle.includes("destroy target")||oracle.includes("exile target")||oracle.includes("counter target")
+  ));
+  let roleStax=manualRoles.stax||(oracle.includes("can't")||oracle.includes("cannot")||oracle.includes("players can't")||oracle.includes("enters the battlefield tapped")||oracle.includes("costs {"));
+  let roleRecursion=manualRoles.recursion||(oracle.includes("return") && (oracle.includes("from your graveyard")||oracle.includes("from a graveyard")));
+  let roleWincon=manualRoles.wincon||false;
+
+  let roleRemovalSingle=manualRoles.removal_single||(roleInteraction&&(oracle.includes("target")&&!oracle.includes("each")));
+  let roleRemovalGlobal=manualRoles.removal_global||(oracle.includes("each creature")||oracle.includes("all creatures")||oracle.includes("destroy all"));
+  let roleManaRock=manualRoles.mana_rock||(isArtifact&&isManaSource);
+  let roleProtection=manualRoles.protection||(oracle.includes("hexproof")||oracle.includes("indestructible")||oracle.includes("protection from")||oracle.includes("prevent all damage"));
+  let roleTutor=manualRoles.tutor||(oracle.includes("search your library for a")&&!oracle.includes("basic land"));
+  let roleComboA=manualRoles.comboA||false;
+  let roleComboB=manualRoles.comboB||false;
+  let roleComboC=manualRoles.comboC||false;
+
+  return {
+        oracleText: oracle,
+
+    name:card.name, qty:1, cmc: typeof card.cmc==="number"?card.cmc:0,
+    mana_cost: manaCost, typeLine: card.type_line||"",
+    isLand,isCreature,isArtifact,isEnchantment,isInstant,isSorcery,isPlaneswalker,
+    manaProfile, isManaSource,
+    rampRepeatable,rampDelayed,rampBurst,
+    roleRamp, roleRampBurst:rampBurst, roleDraw, roleCantrip, roleWheel,
+    roleInteraction, roleCounterspell, roleStax, roleRecursion,
+    roleWincon, roleRemovalSingle, roleRemovalGlobal, roleManaRock, roleProtection, roleTutor,
+    roleComboA, roleComboB, roleComboC,
+    raw: card // FULL SCRYFALL
+  };
+}
+
+/* ---------------- Autocomplete ---------------- */
+function attachAutocomplete(inputId, boxId){
+  const input=document.getElementById(inputId);
+  const box=document.getElementById(boxId);
+  let items=[], active=-1, timer=null, lastQuery="";
+
+  function closeBox(){ box.style.display="none"; box.innerHTML=""; items=[]; active=-1; }
+  function renderBox(list){
+    items=list;
+    if(!items.length){ closeBox(); return; }
+    box.innerHTML=items.map((name,i)=>`<div class="ac-item" data-i="${i}">${name}</div>`).join("");
+    box.style.display="block"; active=-1;
+  }
+  function highlight(){
+    [...box.querySelectorAll(".ac-item")].forEach(el=>el.classList.remove("active"));
+    if(active>=0){
+      const el=box.querySelector(`.ac-item[data-i="${active}"]`);
+      if(el){ el.classList.add("active"); el.scrollIntoView({block:"nearest"}); }
+    }
+  }
+  function pick(i){
+    const name=items[i];
+    input.value=name;
+    closeBox();
+    input.dispatchEvent(new Event("change"));
+    input.focus();
+  }
+
+  input.addEventListener("input", ()=>{
+    const q=input.value.trim();
+    if(q.length<1){ closeBox(); return; }
+    lastQuery=q;
+    clearTimeout(timer);
+    timer=setTimeout(async()=>{
+      try{
+        const list=await fetchAutocomplete(q);
+        if(input.value.trim()!==lastQuery) return;
+        renderBox(list);
+      }catch(e){ closeBox(); }
+    }, 200);
+  });
+
+  input.addEventListener("keydown", (e)=>{
+    if(box.style.display!=="block") return;
+    if(e.key==="ArrowDown"){ e.preventDefault(); active=Math.min(items.length-1, active+1); highlight(); }
+    if(e.key==="ArrowUp"){ e.preventDefault(); active=Math.max(0, active-1); highlight(); }
+    if(e.key==="Enter"){ if(active>=0){ e.preventDefault(); pick(active); } }
+    if(e.key==="Escape"){ closeBox(); }
+  });
+
+  box.addEventListener("click",(e)=>{
+    const el=e.target.closest(".ac-item"); if(!el) return;
+    pick(parseInt(el.dataset.i,10));
+  });
+
+  document.addEventListener("click",(e)=>{
+    if(!box.contains(e.target) && e.target!==input) closeBox();
+  });
+}
+
+/* ---------------- Builder / load ---------------- */
+window.addEventListener('DOMContentLoaded', () => {
+  const saved=localStorage.getItem(DECK_CACHE_KEY);
+  if(saved){ try{ deck=JSON.parse(saved);}catch{deck=[];} renderTable(); }
+  attachAutocomplete("builderName","acBuilder");
+  attachAutocomplete("cmdName","acCmd");
+});
+
+function saveDeck(){ localStorage.setItem(DECK_CACHE_KEY, JSON.stringify(deck)); }
+
+async function addCardSmart(){
+  const name=document.getElementById("builderName").value;
+  let qty=parseInt(document.getElementById("builderQty").value,10); if(!qty||qty<1) qty=1;
+  const btn=document.getElementById("btnAdd"); if(!name.trim()) return;
+  btn.disabled=true; btn.textContent="Buscando...";
+  try{
+    const cardData=await fetchScryfall(name);
+    const manualRoles={
+      ramp:document.getElementById('force_ramp').checked,
+      ramp_burst:document.getElementById('force_ramp_burst').checked,
+      draw:document.getElementById('force_draw').checked,
+      cantrip:document.getElementById('force_cantrip').checked,
+      wheel:document.getElementById('force_wheel').checked,
+      interaction:document.getElementById('force_interaction').checked,
+      counterspell:document.getElementById('force_counterspell').checked,
+      stax:document.getElementById('force_stax').checked,
+      recursion:document.getElementById('force_recursion').checked,
+      wincon:document.getElementById('force_wincon').checked,
+      comboA:document.getElementById('force_comboA').checked,
+      comboB:document.getElementById('force_comboB').checked,
+      comboC:document.getElementById('force_comboC').checked,
+      removal_single:document.getElementById('force_removal_single').checked,
+      removal_global:document.getElementById('force_removal_global').checked,
+      mana_rock:document.getElementById('force_mana_rock').checked,
+      protection:document.getElementById('force_protection').checked,
+      tutor:document.getElementById('force_tutor').checked
+    };
+    const processed=analyzeCard(cardData,manualRoles);
+    processed.qty=qty;
+    deck.push(processed); saveDeck(); renderTable();
+
+    document.getElementById("builderName").value="";
+    document.getElementById("builderQty").value="1";
+    [
+      'force_ramp','force_ramp_burst','force_draw','force_cantrip','force_wheel',
+      'force_interaction','force_counterspell','force_stax','force_recursion','force_wincon',
+      'force_comboA','force_comboB','force_comboC',
+      'force_removal_single','force_removal_global','force_mana_rock',
+      'force_protection','force_tutor'
+    ].forEach(id=>document.getElementById(id).checked=false);
+    document.getElementById("builderName").focus();
+  }catch(e){ alert(e.message); }
+  finally{ btn.disabled=false; btn.textContent="Adicionar carta"; }
+}
+
+async function batchImport(){
+  const text=document.getElementById("batchInput").value.trim(); if(!text) return;
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const status=document.getElementById("simStatus");
+  let count=0;
+  for(const line of lines){
+    status.textContent=`Importando ${count+1}/${lines.length}: ${line}`;
+    try{
+      const clean=line.replace(/^\s*\d+\s*x?\s*/i,"").trim();
+      const cardData=await fetchScryfall(clean);
+      const processed=analyzeCard(cardData,{});
+      deck.push(processed);
+    }catch(e){ console.warn("Falha import:", line); }
+    count++;
+  }
+  saveDeck(); renderTable();
+  status.textContent="Importação concluída."; setTimeout(()=>status.textContent="",2500);
+}
+
+function clearDeck(){ if(confirm("Apagar todo o deck?")){ deck=[]; saveDeck(); renderTable(); } }
+function removeCard(idx){ deck.splice(idx,1); saveDeck(); renderTable(); }
+
+/* ---------------- Raw panel ---------------- */
+function showRaw(idx){
+  const panel=document.getElementById("rawPanel");
+  if(idx==null || !deck[idx] || !deck[idx].raw){
+    panel.style.display="none"; panel.textContent=""; return;
+  }
+  panel.style.display="block";
+  panel.textContent="Scryfall completo — "+deck[idx].name+"\n\n"+JSON.stringify(deck[idx].raw, null, 2);
+  panel.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+/* ---------------- Render table ---------------- */
+function renderTable(){
+  const container=document.getElementById("deckTableContainer");
+  if(deck.length===0){ container.innerHTML="<p class='muted' style='text-align:center;'>Deck vazio.</p>"; return; }
+  let total=0;
+  let html=`<table><thead><tr>
+  <th>Qtd</th><th>Nome</th><th>CMC</th><th>Tipos</th><th>Mana</th><th>Ramp</th><th>Funções</th><th>Scryfall</th><th></th>
+  </tr></thead><tbody>`;
+  deck.forEach((c,i)=>{
+    total+=c.qty;
+    const tipos=[];
+    if(c.isLand)tipos.push("Land");
+    if(c.isCreature)tipos.push("Creature");
+    if(c.isArtifact)tipos.push("Artifact");
+    if(c.isEnchantment)tipos.push("Enchantment");
+    if(c.isInstant)tipos.push("Instant");
+    if(c.isSorcery)tipos.push("Sorcery");
+    if(c.isPlaneswalker)tipos.push("PW");
+
+    const manaTags=[];
+    if(c.manaProfile.ANY) manaTags.push("<span class='badge'>ANY</span>");
+    ["W","U","B","R","G","C"].forEach(col=>{ if(c.manaProfile[col]) manaTags.push(`<span class='badge'>${col}</span>`); });
+
+    const rampTags=[];
+    if(c.rampRepeatable) rampTags.push("<span class='badge ramp'>rep</span>");
+    if(c.rampDelayed) rampTags.push("<span class='badge gold'>delay</span>");
+    if(c.rampBurst) rampTags.push("<span class='badge counter'>burst</span>");
+
+    const roles=[];
+    if(c.roleDraw)roles.push("Draw");
+    if(c.roleCantrip)roles.push("Cantrip");
+    if(c.roleWheel)roles.push("Wheel");
+    if(c.roleInteraction)roles.push("Inter");
+    if(c.roleCounterspell)roles.push("Counter");
+    if(c.roleStax)roles.push("Stax");
+    if(c.roleRecursion)roles.push("Recur");
+    if(c.roleRemovalSingle)roles.push("Rem1");
+    if(c.roleRemovalGlobal)roles.push("RemG");
+    if(c.roleManaRock)roles.push("Rock");
+    if(c.roleProtection)roles.push("Prot");
+    if(c.roleTutor)roles.push("Tutor");
+    if(c.roleWincon)roles.push("Wincon");
+    if(c.roleComboA)roles.push("CA");
+    if(c.roleComboB)roles.push("CB");
+    if(c.roleComboC)roles.push("CC");
+
+    html+=`<tr>
+      <td>${c.qty}</td><td>${c.name}</td><td>${c.cmc}</td>
+      <td>${tipos.join(", ")||"-"}</td>
+      <td>${manaTags.join("")||"-"}</td>
+      <td>${rampTags.join("")||"-"}</td>
+      <td>${roles.join(", ")||"-"}</td>
+      <td><button class="btn-ghost" style="padding:2px 6px; font-size:0.75rem; margin:0;" onclick="showRaw(${i})">Detalhes</button></td>
+      <td>
+            <button class="btn-ghost" style="padding:2px 6px; font-size:0.7rem; margin:0 6px 0 0;" onclick="openEditModal(${i})">Editar</button>
+            <button class="btn-danger" style="padding:2px 6px; font-size:0.7rem; margin:0;" onclick="removeCard(${i})">X</button>
+          </td>
+    </tr>`;
+  });
+  html+=`</tbody></table><p class="muted" style="text-align:right;">Total (sem comandante): ${total}</p>`;
+  container.innerHTML=html;
+}
+
+/* ---------------- Commander ---------------- */
+async function fetchCommanderData(){
+  const name=document.getElementById("cmdName").value.trim();
+  if(!name){ alert("Digite o nome do comandante."); return; }
+  const statsEl=document.getElementById("cmdStats");
+  statsEl.textContent="Buscando...";
+  try{
+    commander=await fetchScryfall(name);
+    const cmc=Math.floor(commander.cmc||0);
+    document.getElementById("cmdCMC").value=cmc;
+
+    const sym=manaSymbolsFromCost(commander.mana_cost||"");
+    document.getElementById("reqW").value=sym.W;
+    document.getElementById("reqU").value=sym.U;
+    document.getElementById("reqB").value=sym.B;
+    document.getElementById("reqR").value=sym.R;
+    document.getElementById("reqG").value=sym.G;
+
+    const colors=commander.color_identity||[];
+    statsEl.innerHTML=`<b>${commander.name}</b> — ${commander.type_line||"—"}<br>
+    Custo: ${commander.mana_cost||"—"} | CMC: ${commander.cmc||"—"}<br>
+    Identidade de cor: ${colors.length? colors.join(", "): "Incolor"}`;
+  }catch(e){ statsEl.textContent="Erro ao buscar comandante."; }
+}
+
+/* ---------------- Deck expansion and color helpers ---------------- */
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
+  }
+  return array;
+}
+function expandDeck(d=deck){
+  const flat=[];
+  d.forEach(c=>{ for(let i=0;i<c.qty;i++) flat.push(clone(c)); });
+  return flat;
+}
+function countManaSources(flatDeck){
+  const sources={W:0,U:0,B:0,R:0,G:0,C:0,ANY:0,total:0};
+  flatDeck.forEach(c=>{
+    if(c.isManaSource){
+      sources.total++;
+      if(c.manaProfile.ANY) sources.ANY++;
+      ["W","U","B","R","G","C"].forEach(col=>{ if(c.manaProfile[col]) sources[col]++; });
+    }
+  });
+  return sources;
+}
+function colorRequirementMet(sources, req){
+  let any=sources.ANY||0;
+  const need={...req};
+  ["W","U","B","R","G"].forEach(col=>{
+    const have=sources[col]||0;
+    need[col]=Math.max(0, need[col]-have);
+  });
+  for(const col of ["W","U","B","R","G"]){
+    if(need[col]>0){
+      const use=Math.min(any, need[col]);
+      any-=use; need[col]-=use;
+    }
+  }
+  return (need.W+need.U+need.B+need.R+need.G)===0;
+}
+
+/* ---------------- Mana diagnostics ---------------- */
+function probabilityColorByTurnFast(flatDeck, targetTurn, req, samples){
+  // Fast MC: only considers mana sources among first 7 + draws up to targetTurn
+  const drawCount = 7 + (targetTurn-1); // on the play approximation; close enough
+  let ok=0;
+  for(let s=0;s<samples;s++){
+    const lib=shuffle(flatDeck.slice());
+    const seen=lib.slice(0, drawCount);
+    const sourcesByColor={W:0,U:0,B:0,R:0,G:0,C:0,ANY:0};
+    seen.forEach(c=>{
+      if(c.isManaSource){
+        if(c.manaProfile.ANY) sourcesByColor.ANY++;
+        ["W","U","B","R","G","C"].forEach(col=>{ if(c.manaProfile[col]) sourcesByColor[col]++; });
+      }
+    });
+    if(colorRequirementMet(sourcesByColor, req)) ok++;
+  }
+  return ok/samples;
+}
+
+// "regra de bolso" interna para recomendacao de sources (heuristica simples)
+function recommendedSources(req, targetTurn){
+  // quanto mais cedo, mais sources por pip
+  const base = targetTurn<=2 ? 14 : targetTurn===3 ? 11 : targetTurn===4 ? 9 : 8;
+  const out={};
+  ["W","U","B","R","G"].forEach(col=>{
+    out[col] = req[col] > 0 ? Math.round(base*req[col]) : 0;
+  });
+  return out;
+}
+
+function runManaDiagnostics(){
+  const flatDeck=expandDeck();
+  if(flatDeck.length===0){ alert("Deck vazio."); return; }
+
+  const targetTurn=parseInt(document.getElementById("manaTargetTurn").value,10)||3;
+  const mode=document.getElementById("manaMode").value;
+  const samples=parseInt(document.getElementById("manaFastSamples").value,10)||20000;
+
+  const req={
+    W:parseInt(document.getElementById("reqW").value,10)||0,
+    U:parseInt(document.getElementById("reqU").value,10)||0,
+    B:parseInt(document.getElementById("reqB").value,10)||0,
+    R:parseInt(document.getElementById("reqR").value,10)||0,
+    G:parseInt(document.getElementById("reqG").value,10)||0
+  };
+
+  const sources=countManaSources(flatDeck);
+  const rec=recommendedSources(req, targetTurn);
+
+  let pColor=null;
+  if(mode==="fast"){
+    pColor=probabilityColorByTurnFast(flatDeck, targetTurn, req, samples);
+  }
+
+  let out = "";
+  out += `Mana sources (no deck): total=${sources.total}\n`;
+  out += `  W=${sources.W} U=${sources.U} B=${sources.B} R=${sources.R} G=${sources.G} C=${sources.C} ANY=${sources.ANY}\n\n`;
+  out += `Requisito do comandante: W=${req.W}, U=${req.U}, B=${req.B}, R=${req.R}, G=${req.G}\n`;
+  out += `Turno-alvo: T${targetTurn}\n\n`;
+  out += `Heurística de sources recomendadas (aprox.):\n`;
+  out += `  W≥${rec.W} U≥${rec.U} B≥${rec.B} R≥${rec.R} G≥${rec.G}\n\n`;
+  const deltas = {};
+  ["W","U","B","R","G"].forEach(col=>{
+    deltas[col]= (sources[col]+sources.ANY) - rec[col];
+  });
+  out += `Delta vs recomendado (sources+ANY - recomendado):\n`;
+  out += `  W:${deltas.W>=0?"+":""}${deltas.W} U:${deltas.U>=0?"+":""}${deltas.U} B:${deltas.B>=0?"+":""}${deltas.B} R:${deltas.R>=0?"+":""}${deltas.R} G:${deltas.G>=0?"+":""}${deltas.G}\n\n`;
+
+  if(pColor!==null){
+    out += `Probabilidade (fast MC) de cumprir cores até T${targetTurn}: ${(100*pColor).toFixed(2)}%\n`;
+    out += `(Obs: considera apenas "ter as cores vistas", não a sequência perfeita de land drops.)\n`;
+  } else {
+    out += `Modo "sim": use a simulação completa (aba 4) e olhe "cor ok por turno".\n`;
+  }
+
+  document.getElementById("manaDiagOut").textContent=out;
+}
+
+/* ---------------- Mulligan policy (keep score) ---------------- */
+function keepScore(hand, style, req, aggroWeight){
+  const lands=hand.filter(c=>c.isLand).length;
+  const ramps=hand.filter(c=>c.roleRamp && !c.rampBurst).length;
+  const burst=hand.filter(c=>c.rampBurst).length;
+  const draw=hand.filter(c=>c.roleDraw||c.roleCantrip||c.roleWheel).length;
+  const tutors=hand.filter(c=>c.roleTutor).length;
+  const inter=hand.filter(c=>c.roleInteraction||c.roleCounterspell).length;
+  const stax=hand.filter(c=>c.roleStax).length;
+  const win=hand.filter(c=>c.roleWincon||c.roleComboA||c.roleComboB||c.roleComboC).length;
+  const avgCMC = hand.reduce((a,c)=>a+c.cmc,0)/hand.length;
+
+  // cor minima na mão inicial (aprox)
+  const sourcesByColor={W:0,U:0,B:0,R:0,G:0,C:0,ANY:0};
+  hand.forEach(c=>{
+    if(c.isManaSource){
+      if(c.manaProfile.ANY) sourcesByColor.ANY++;
+      ["W","U","B","R","G","C"].forEach(col=>{ if(c.manaProfile[col]) sourcesByColor[col]++; });
+    }
+  });
+  const colorOk0 = colorRequirementMet(sourcesByColor, req) ? 1 : 0;
+
+  let score=0;
+
+  // base: terrenos
+  score += lands*2;
+  // penaliza extremos
+  if(lands===0) score -= 8;
+  if(lands>=6) score -= 4;
+
+  // ramp e draw são diferentes por estilo
+  if(style==="turbo"){
+    score += ramps*3 + burst*2 + tutors*2 + win*2;
+    score += draw*1;
+    score -= stax*1;
+  } else if(style==="grindy"){
+    score += draw*3 + inter*2 + stax*2;
+    score += ramps*1;
+    score -= avgCMC>3.8 ? 2 : 0;
+  } else { // balanced
+    score += ramps*2 + draw*2 + inter*1 + tutors*1 + stax*0.5;
+  }
+
+  // cor na mão inicial ajuda
+  score += colorOk0*2;
+
+  // mão muito cara sem ramp é ruim
+  if(avgCMC>3.6 && ramps===0 && burst===0) score -= 3;
+
+  return score*aggroWeight;
+}
+
+/* ---------------- Simulation engine ---------------- */
+function playTurn(state){
+  const {hand, battlefield, library, turn, onThePlay}=state;
+  if(!(onThePlay && turn===1) && library.length>0) hand.push(library.shift());
+
+  const landIdx=hand.findIndex(c=>c.isLand);
+  if(landIdx>-1){
+    const land=hand.splice(landIdx,1)[0];
+    land.activeFromTurn=turn;
+    battlefield.push(land);
+  }
+
+  const activeSources=battlefield.filter(c=>c.isManaSource && (c.activeFromTurn||0)<=turn);
+  let manaAvail=activeSources.length;
+
+  function castCard(idx){
+    const card=hand.splice(idx,1)[0];
+    manaAvail-=Math.floor(card.cmc||0);
+    if(card.isCreature || card.isArtifact || card.isEnchantment || card.isPlaneswalker){
+      card.activeFromTurn=card.rampDelayed? turn+1 : turn;
+      battlefield.push(card);
+    }else if(card.rampBurst){
+      manaAvail+=1;
+    }else if(card.isSorcery||card.isInstant){
+      if(card.rampDelayed) state.pendingNext=(state.pendingNext||0)+1;
+      if(card.rampRepeatable) state.pendingNow=(state.pendingNow||0)+1;
+    }
+  }
+
+  // Política simples de casting focada em mana first, depois draw (pré-v15 era só ramp)
+  let keep=true;
+  while(keep){
+    keep=false;
+    const afford = c => Math.floor(c.cmc||0) <= manaAvail;
+    let idx = hand.findIndex(c=>c.roleRamp && !c.rampBurst && c.rampRepeatable && afford(c));
+    if(idx===-1) idx = hand.findIndex(c=>c.roleRamp && !c.rampBurst && c.rampDelayed && afford(c));
+    if(idx===-1) idx = hand.findIndex(c=>c.rampBurst && afford(c));
+    if(idx===-1) idx = hand.findIndex(c=>c.roleDraw && afford(c));
+    if(idx>-1){ castCard(idx); keep=true; }
+  }
+
+  if(state.pendingNow){
+    for(let i=0;i<state.pendingNow;i++){
+      battlefield.push({isLand:true,isManaSource:true, manaProfile:{ANY:true}, activeFromTurn:turn, cmc:0, name:"(Ramp Land Now)"});
+    }
+    state.pendingNow=0;
+  }
+  if(state.pendingNext){
+    for(let i=0;i<state.pendingNext;i++){
+      battlefield.push({isLand:true,isManaSource:true, manaProfile:{ANY:true}, activeFromTurn:turn+1, cmc:0, name:"(Ramp Land Next)"});
+    }
+    state.pendingNext=0;
+  }
+
+  const activeAfter=battlefield.filter(c=>c.isManaSource && (c.activeFromTurn||0)<=turn);
+  const manaTotal=activeAfter.length;
+  const sourcesByColor={W:0,U:0,B:0,R:0,G:0,C:0,ANY:0};
+  activeAfter.forEach(c=>{
+    const mp=c.manaProfile||{};
+    if(mp.ANY) sourcesByColor.ANY++;
+    ["W","U","B","R","G","C"].forEach(col=>{ if(mp[col]) sourcesByColor[col]++; });
+  });
+  return {manaTotal, sourcesByColor};
+}
+
+function simulateOneGame(flatDeck, maxTurn, onThePlay, cmdCMC, req, keepStyle, aggroWeight){
+  let mull=0, bestHand=null, bestScore=-9999, bestLib=null;
+
+  const minLands=parseInt(document.getElementById("minLands").value,10)||0;
+  const maxLands=parseInt(document.getElementById("maxLands").value,10)||7;
+
+  for(let attempt=0; attempt<=3; attempt++){
+    const library=shuffle(flatDeck.slice());
+    const hand=library.splice(0,7);
+    const lands=hand.filter(c=>c.isLand).length;
+
+    // se fora da faixa, já penaliza forte
+    let score=keepScore(hand, keepStyle, req, aggroWeight);
+    if(lands<minLands || lands>maxLands) score -= 6;
+
+    if(score>bestScore){
+      bestScore=score; bestHand=hand; bestLib=library;
+    }
+    mull=attempt;
+  }
+
+  // London bottom: remove mull cartas aleatorias da melhor mão
+  let hand=bestHand.slice();
+  let library=bestLib.slice();
+  if(mull>0){
+    for(let i=0;i<mull;i++){
+      if(hand.length===0) break;
+      const r=Math.floor(Math.random()*hand.length);
+      library.push(hand.splice(r,1)[0]);
+    }
+  }
+
+  const battlefield=[];
+  const castableByTurn=[], manaByTurn=[], colorOkByTurn=[];
+  let firstCastTurn=null;
+
+  // métricas de prob funcional
+  let comboABByT5=0, comboABCByT7=0;
+  let interactionByT3=0, interactionByT4=0;
+  let drawByT3=0, drawByT4=0;
+  let protectionByT3=0, protectionByT4=0;
+  let tutorByT4=0, staxByT4=0, recursionByT5=0;
+  let removalSingleByT3=0, removalSingleByT4=0, removalGlobalByT5=0;
+  let manaRockByT3=0, winconByT6=0;
+
+  for(let turn=1; turn<=maxTurn; turn++){
+    const state={hand,battlefield,library,turn,onThePlay,pendingNow:0,pendingNext:0};
+    const out=playTurn(state);
+    const pool=hand.concat(battlefield);
+
+    const countRole=pred=>pool.filter(pred).length;
+    const comboA=countRole(c=>c.roleComboA);
+    const comboB=countRole(c=>c.roleComboB);
+    const comboC=countRole(c=>c.roleComboC);
+
+    if(turn<=5 && comboA>=1 && comboB>=1) comboABByT5=1;
+    if(turn<=7 && comboA>=1 && comboB>=1 && comboC>=1) comboABCByT7=1;
+
+    if(turn<=3 && countRole(c=>c.roleInteraction||c.roleCounterspell)>=1) interactionByT3=1;
+    if(turn<=4 && countRole(c=>c.roleInteraction||c.roleCounterspell)>=1) interactionByT4=1;
+
+    if(turn<=3 && countRole(c=>c.roleDraw||c.roleCantrip||c.roleWheel)>=1) drawByT3=1;
+    if(turn<=4 && countRole(c=>c.roleDraw||c.roleCantrip||c.roleWheel)>=1) drawByT4=1;
+
+    if(turn<=3 && countRole(c=>c.roleProtection)>=1) protectionByT3=1;
+    if(turn<=4 && countRole(c=>c.roleProtection)>=1) protectionByT4=1;
+
+    if(turn<=4 && countRole(c=>c.roleTutor)>=1) tutorByT4=1;
+    if(turn<=4 && countRole(c=>c.roleStax)>=1) staxByT4=1;
+    if(turn<=5 && countRole(c=>c.roleRecursion)>=1) recursionByT5=1;
+
+    if(turn<=3 && countRole(c=>c.roleRemovalSingle)>=1) removalSingleByT3=1;
+    if(turn<=4 && countRole(c=>c.roleRemovalSingle)>=1) removalSingleByT4=1;
+    if(turn<=5 && countRole(c=>c.roleRemovalGlobal)>=1) removalGlobalByT5=1;
+
+    if(turn<=3 && countRole(c=>c.roleManaRock)>=1) manaRockByT3=1;
+    if(turn<=6 && countRole(c=>c.roleWincon)>=1) winconByT6=1;
+
+    const manaTotal=out.manaTotal;
+    const colorOk=colorRequirementMet(out.sourcesByColor, req);
+    const conjurable=(manaTotal>=cmdCMC) && colorOk;
+
+    castableByTurn.push(conjurable?1:0);
+    manaByTurn.push(manaTotal);
+    colorOkByTurn.push(colorOk?1:0);
+  }
+  for(let t=0;t<maxTurn;t++){ if(castableByTurn[t]){ firstCastTurn=t+1; break; } }
+
+  return {mull, castableByTurn, manaByTurn, colorOkByTurn, firstCastTurn,
+    comboABByT5, comboABCByT7, interactionByT3, interactionByT4,
+    drawByT3, drawByT4, protectionByT3, protectionByT4, tutorByT4, staxByT4, recursionByT5,
+    removalSingleByT3, removalSingleByT4, removalGlobalByT5,
+    manaRockByT3, winconByT6
+  };
+}
+
+function estimateEffectiveDeck(flatDeck){
+  const tutors=flatDeck.filter(c=>c.roleTutor).length;
+  const cantrips=flatDeck.filter(c=>c.roleCantrip).length;
+  const wheels=flatDeck.filter(c=>c.roleWheel).length;
+  const fetchlike=flatDeck.filter(c=>c.isLand && (c.raw.oracle_text||"").toLowerCase().includes("search your library") ).length;
+
+  let reduction = tutors*0.35 + cantrips*0.2 + wheels*0.5 + fetchlike*0.1;
+  reduction = Math.min(reduction, flatDeck.length*0.25); // cap 25%
+  const Neff = Math.round(flatDeck.length - reduction);
+  return {Neff, reduction, tutors, cantrips, wheels, fetchlike};
+}
+
+function runSimulation(customDeck=null){
+  const flatDeck=expandDeck(customDeck||deck);
+  if(flatDeck.length===0){ alert("Deck vazio."); return; }
+
+  const numGames=parseInt(document.getElementById("simGames").value,10)||5000;
+  const maxTurn=parseInt(document.getElementById("simMaxTurn").value,10)||8;
+  const cmdCMC=parseInt(document.getElementById("cmdCMC").value,10)||0;
+  const onThePlay=document.getElementById("onThePlay").checked;
+  const keepStyle=document.getElementById("keepStyle").value;
+  const aggroWeight=parseFloat(document.getElementById("keepAggro").value)||1.0;
+
+  const req={
+    W:parseInt(document.getElementById("reqW").value,10)||0,
+    U:parseInt(document.getElementById("reqU").value,10)||0,
+    B:parseInt(document.getElementById("reqB").value,10)||0,
+    R:parseInt(document.getElementById("reqR").value,10)||0,
+    G:parseInt(document.getElementById("reqG").value,10)||0
+  };
+
+  const status=document.getElementById("simStatus");
+  status.textContent=`Rodando ${numGames} jogos...`;
+
+  const sumCastable=new Array(maxTurn).fill(0);
+  const sumMana=new Array(maxTurn).fill(0);
+  const sumColorOk=new Array(maxTurn).fill(0);
+  const buckets={"T3 ou antes":0,"T4":0,"T5":0,"T6+":0,"Nunca":0};
+  const mullCount=[0,0,0,0];
+
+  let comboAB=0, comboABC=0;
+  let interT3=0, interT4=0, drawT3=0, drawT4=0, protT3=0, protT4=0, tutorT4=0, staxT4=0, recurT5=0;
+  let rem1T3=0, rem1T4=0, remGT5=0, rockT3=0, winT6=0;
+
+  for(let g=0; g<numGames; g++){
+    const res=simulateOneGame(flatDeck,maxTurn,onThePlay,cmdCMC,req,keepStyle,aggroWeight);
+    mullCount[Math.min(3,res.mull)]++;
+    for(let t=0;t<maxTurn;t++){
+      sumCastable[t]+=res.castableByTurn[t];
+      sumMana[t]+=res.manaByTurn[t];
+      sumColorOk[t]+=res.colorOkByTurn[t];
+    }
+    const ft=res.firstCastTurn;
+    if(ft===null) buckets["Nunca"]++;
+    else if(ft<=3) buckets["T3 ou antes"]++;
+    else if(ft===4) buckets["T4"]++;
+    else if(ft===5) buckets["T5"]++;
+    else buckets["T6+"]++;
+
+    comboAB+=res.comboABByT5; comboABC+=res.comboABCByT7;
+    interT3+=res.interactionByT3; interT4+=res.interactionByT4;
+    drawT3+=res.drawByT3; drawT4+=res.drawByT4;
+    protT3+=res.protectionByT3; protT4+=res.protectionByT4;
+    tutorT4+=res.tutorByT4; staxT4+=res.staxByT4; recurT5+=res.recursionByT5;
+    rem1T3+=res.removalSingleByT3; rem1T4+=res.removalSingleByT4; remGT5+=res.removalGlobalByT5;
+    rockT3+=res.manaRockByT3; winT6+=res.winconByT6;
+  }
+
+  const eff=estimateEffectiveDeck(flatDeck);
+
+  const pct=x=>(100*x/numGames).toFixed(1)+"%";
+  let out="";
+  out+=`Jogos simulados: ${numGames}\nDeck size (sem comandante): ${flatDeck.length}\nDeck efetivo estimado (N_eff): ${eff.Neff} (redução ~${eff.reduction.toFixed(1)} cartas)\n`;
+  out+=`  Tutores=${eff.tutors}, Cantrips=${eff.cantrips}, Wheels=${eff.wheels}, Fetch-like=${eff.fetchlike}\n\n`;
+  out+=`CMC comandante: ${cmdCMC}\nRequisitos de cor: W=${req.W}, U=${req.U}, B=${req.B}, R=${req.R}, G=${req.G}\nKeep style: ${keepStyle} | Peso mulligan: ${aggroWeight}\n\n`;
+  out+=`London Mulligan (melhor mão por score):\n  0: ${pct(mullCount[0])}\n  1: ${pct(mullCount[1])}\n  2: ${pct(mullCount[2])}\n  3: ${pct(mullCount[3])}\n\n`;
+  out+=`Comandante conjurável por turno (mana+cor):\n`;
+  for(let t=0;t<maxTurn;t++){
+    out+=`  T${t+1}: ${pct(sumCastable[t])} (mana média ${(sumMana[t]/numGames).toFixed(2)}, cor ok ${pct(sumColorOk[t])})\n`;
+  }
+  out+=`\nTurno de conjuração:\n`;
+  ["T3 ou antes","T4","T5","T6+","Nunca"].forEach(b=> out+=`  ${b}: ${pct(buckets[b])}\n`);
+
+  out+=`\nProbabilidades funcionais:\n`;
+  out+=`  Combo A+B até T5: ${pct(comboAB)}\n`;
+  out+=`  Combo A+B+C até T7: ${pct(comboABC)}\n`;
+  out+=`  Interação/Counter até T3/T4: ${pct(interT3)} / ${pct(interT4)}\n`;
+  out+=`  Compra (draw+cantrip+wheel) até T3/T4: ${pct(drawT3)} / ${pct(drawT4)}\n`;
+  out+=`  Proteção até T3/T4: ${pct(protT3)} / ${pct(protT4)}\n`;
+  out+=`  Tutor até T4: ${pct(tutorT4)}\n`;
+  out+=`  Stax/Tax até T4: ${pct(staxT4)}\n`;
+  out+=`  Recursão até T5: ${pct(recurT5)}\n`;
+  out+=`  Remoção pontual T3/T4: ${pct(rem1T3)} / ${pct(rem1T4)}\n`;
+  out+=`  Remoção global até T5: ${pct(remGT5)}\n`;
+  out+=`  Pedra de mana até T3: ${pct(rockT3)}\n`;
+  out+=`  Wincon até T6: ${pct(winT6)}\n`;
+
+  document.getElementById("textResults").textContent=out;
+
+  let table=`<table><thead><tr><th>Turno</th><th>Prob. comandante</th><th>Mana média</th><th>Cor ok</th><th></th></tr></thead><tbody>`;
+  for(let t=0;t<maxTurn;t++){
+    const p=100*sumCastable[t]/numGames;
+    const cOk=100*sumColorOk[t]/numGames;
+    table+=`<tr><td>T${t+1}</td><td>${p.toFixed(1)}%</td><td>${(sumMana[t]/numGames).toFixed(2)}</td>
+    <td>${cOk.toFixed(1)}%</td><td style="width:35%"><div class="bar-bg"><div class="bar-fill" style="width:${p.toFixed(1)}%"></div></div></td></tr>`;
+  }
+  table+=`</tbody></table>`;
+  document.getElementById("charts").innerHTML=table;
+
+  status.textContent="Concluído."; setTimeout(()=>status.textContent="",2500);
+}
+
+/* ---------------- Sensibilidade rápida ---------------- */
+function runSensitivity(mode){
+  const d=clone(deck);
+  if(d.length===0){ alert("Deck vazio."); return; }
+  // cria um deck virtual
+  if(mode==="plus_land"){
+    // transforma uma carta aleatória não-terreno em "land genérica"
+    const idx = d.findIndex(c=>!c.isLand);
+    if(idx>-1){
+      d[idx]={
+        name:"(Virtual Land)", qty:1, cmc:0, mana_cost:"", typeLine:"Land",
+        isLand:true,isCreature:false,isArtifact:false,isEnchantment:false,isInstant:false,isSorcery:false,isPlaneswalker:false,
+        manaProfile:{ANY:true}, isManaSource:true,
+        rampRepeatable:false,rampDelayed:false,rampBurst:false,
+        roleRamp:false,roleRampBurst:false,roleDraw:false,roleCantrip:false,roleWheel:false,
+        roleInteraction:false,roleCounterspell:false,roleStax:false,roleRecursion:false,
+        roleWincon:false,roleRemovalSingle:false,roleRemovalGlobal:false,roleManaRock:false,roleProtection:false,roleTutor:false,
+        roleComboA:false,roleComboB:false,roleComboC:false, raw:{note:"virtual"}
+      };
+    }
+  } else if(mode==="minus_land"){
+    const idx = d.findIndex(c=>c.isLand);
+    if(idx>-1){
+      d.splice(idx,1);
+    }
+  } else if(mode==="plus_rock"){
+    d.push({
+      name:"(Virtual Rock)", qty:1, cmc:2, mana_cost:"{2}", typeLine:"Artifact",
+      isLand:false,isCreature:false,isArtifact:true,isEnchantment:false,isInstant:false,isSorcery:false,isPlaneswalker:false,
+      manaProfile:{ANY:true}, isManaSource:true,
+      rampRepeatable:true,rampDelayed:false,rampBurst:false,
+      roleRamp:true,roleRampBurst:false,roleDraw:false,roleCantrip:false,roleWheel:false,
+      roleInteraction:false,roleCounterspell:false,roleStax:false,roleRecursion:false,
+      roleWincon:false,roleRemovalSingle:false,roleRemovalGlobal:false,roleManaRock:true,roleProtection:false,roleTutor:false,
+      roleComboA:false,roleComboB:false,roleComboC:false, raw:{note:"virtual"}
+    });
+  }
+  runSimulation(d);
+}
+
+/* ---------------- Hypergeom ---------------- */
+function comb(n,k){
+  if(k<0||k>n) return 0;
+  k=Math.min(k,n-k);
+  let r=1;
+  for(let i=1;i<=k;i++) r=r*(n-k+i)/i;
+  return r;
+}
+function hypergeomAtLeast(N,K,n,kmin){
+  if(n>N) n=N;
+  const maxK=Math.min(n,K);
+  let num=0;
+  for(let k=kmin;k<=maxK;k++){
+    num+=comb(K,k)*comb(N-K,n-k);
+  }
+  const den=comb(N,n);
+  return den? num/den:0;
+}
+function doHypergeom(){
+  const N=parseInt(document.getElementById("hypN").value,10)||99;
+  const K=parseInt(document.getElementById("hypK").value,10)||0;
+  const n=parseInt(document.getElementById("hypn").value,10)||7;
+  const kmin=parseInt(document.getElementById("hypkmin").value,10)||0;
+  const p=hypergeomAtLeast(N,K,n,kmin);
+  document.getElementById("hypOut").textContent=`X ~ Hipergeométrica(N=${N}, K=${K}, n=${n})\nP[X ≥ ${kmin}] = ${(100*p).toFixed(2)}%`;
+}
+
+/* ---------------- Exports ---------------- */
+function exportDeckCSV(){
+  if(deck.length===0){ alert("Deck vazio."); return; }
+  const header=["name","qty","cmc","typeLine","isLand","isCreature","isArtifact","isEnchantment","isInstant","isSorcery","isPlaneswalker",
+    "mana_ANY","mana_W","mana_U","mana_B","mana_R","mana_G","mana_C",
+    "rampRepeatable","rampDelayed","rampBurst","roleRamp","roleRampBurst",
+    "roleDraw","roleCantrip","roleWheel","roleInteraction","roleCounterspell","roleStax","roleRecursion",
+    "roleRemovalSingle","roleRemovalGlobal","roleManaRock","roleProtection","roleTutor","roleWincon","roleComboA","roleComboB","roleComboC"];
+  const lines=[header.join(",")];
+  deck.forEach(c=>{
+    lines.push([
+      `"${c.name.replace(/"/g,'""')}"`,c.qty,c.cmc,`"${(c.typeLine||"").replace(/"/g,'""')}"`,
+      +c.isLand,+c.isCreature,+c.isArtifact,+c.isEnchantment,+c.isInstant,+c.isSorcery,+c.isPlaneswalker,
+      +!!c.manaProfile.ANY,+!!c.manaProfile.W,+!!c.manaProfile.U,+!!c.manaProfile.B,+!!c.manaProfile.R,+!!c.manaProfile.G,+!!c.manaProfile.C,
+      +!!c.rampRepeatable,+!!c.rampDelayed,+!!c.rampBurst,
+      +!!c.roleRamp,+!!c.roleRampBurst,
+      +!!c.roleDraw,+!!c.roleCantrip,+!!c.roleWheel,+!!c.roleInteraction,+!!c.roleCounterspell,+!!c.roleStax,+!!c.roleRecursion,
+      +!!c.roleRemovalSingle,+!!c.roleRemovalGlobal,+!!c.roleManaRock,+!!c.roleProtection,+!!c.roleTutor,+!!c.roleWincon,+!!c.roleComboA,+!!c.roleComboB,+!!c.roleComboC
+    ].join(","));
+  });
+  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="deck_commander_v15.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function exportDeckJSON(){
+  if(deck.length===0){ alert("Deck vazio."); return; }
+  const payload={version:"v15-hardscience", commander: commander||null, deck};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="deck_commander_v15_full.json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function exportReportHTML(){
+  const report=document.getElementById("textResults").textContent;
+  const deckSize=expandDeck().length;
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Commander Deck Builder</title>
+<style>body{font-family:system-ui;padding:2rem;background:#0b1020;color:#e5e7eb;}
+pre{background:#030712;border:1px solid #111827;padding:1rem;border-radius:0.5rem;white-space:pre-wrap;}
+</style></head><body>
+<h1>Commander Analytics Report (v15)</h1>
+<p>Deck size (sem comandante): ${deckSize}</p>
+<pre>${report.replace(/</g,"&lt;")}</pre>
+<p style="position:fixed;right:1rem;bottom:0.5rem;color:#888;font-size:0.8rem;">Victor Chaves Machado</p>
+</body></html>`;
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="commander_report_v15.html";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ================================
+//  HIPERGEOMETRICA (ODDS EXATAS)
+// ================================
+function logChoose(n,k){
+  if(k<0||k>n) return -Infinity;
+  k=Math.min(k,n-k);
+  let s=0;
+  for(let i=1;i<=k;i++) s+=Math.log((n-k+i)/i);
+  return s;
+}
+function hypergeomAtLeast(N,K,n,x){
+  let total=0;
+  const maxI=Math.min(K,n);
+  for(let i=x;i<=maxI;i++){
+    const logp = logChoose(K,i)+logChoose(N-K,n-i)-logChoose(N,n);
+    total += Math.exp(logp);
+  }
+  return Math.max(0,Math.min(1,total));
+}
+
+function computeHgK(group){
+  // conta copias no deck expandido (considera qty)
+  let K=0;
+  deck.forEach(c=>{
+    const q=c.qty||1;
+    if(group==="lands" && c.isLand) K+=q;
+    else if(group==="ramp" && (c.roleRamp || c.roleManaRock || c.rampBurst)) K+=q;
+    else if(group==="draw" && c.roleDraw) K+=q;
+    else if(group==="interaction" && (c.roleInteraction || c.roleRemovalSingle || c.roleRemovalGlobal)) K+=q;
+    else if(group==="counter" && (c.roleCounterspell || c.isInstant && (c.oracleText||"").toLowerCase().includes("counter target"))) K+=q;
+    else if(group==="tutor" && c.roleTutor) K+=q;
+    else if(group==="comboA" && c.roleComboA) K+=q;
+    else if(group==="comboB" && c.roleComboB) K+=q;
+    else if(group==="comboC" && c.roleComboC) K+=q;
+    else if(group==="wincon" && c.roleWincon) K+=q;
+  });
+  return K;
+}
+
+function updateHgAuto(){
+  const group=document.getElementById("hgGroup").value;
+  const K=computeHgK(group);
+  document.getElementById("hgK").value=K;
+
+  const t=parseInt(document.getElementById("hgTurn").value,10)||1;
+  const play=document.getElementById("hgOnThePlay").value==="play";
+  const n = 7 + Math.max(0,t-1) + (play?0:1);
+  document.getElementById("hgN").value=n;
+}
+
+document.addEventListener("change",(e)=>{
+  if(["hgGroup","hgTurn","hgOnThePlay"].includes(e.target.id)){
+    updateHgAuto();
+  }
+});
+
+function runHypergeo(){
+  if(deck.length===0){
+    alert("Deck vazio. Adicione cartas antes.");
+    return;
+  }
+  const N=deck.reduce((s,c)=>s+(c.qty||1),0);
+  const K=parseInt(document.getElementById("hgK").value,10)||0;
+  const x=parseInt(document.getElementById("hgX").value,10)||1;
+  const n=parseInt(document.getElementById("hgN").value,10)||0;
+
+  if(K===0){
+    document.getElementById("hgOut").textContent="K=0 (nenhuma copia no grupo).";
+    return;
+  }
+  const p=hypergeomAtLeast(N,K,n,x);
+  const groupLabel=document.getElementById("hgGroup").selectedOptions[0].textContent;
+  const turn=document.getElementById("hgTurn").value;
+  const out=
+`Grupo: ${groupLabel}
+Deck (N): ${N} cartas
+Copias no grupo (K): ${K}
+Cartas vistas (n): ${n}
+Alvo: >= ${x}
+
+Chance teorica de ver pelo menos ${x}: ${(p*100).toFixed(2)}%`;
+  document.getElementById("hgOut").textContent=out;
+}
+
+// ================================
+//  COMMANDER SPELLBOOK (COMBOS)
+// ================================
+let spellbookLastResults = null;
+
+function getDeckNamesForSpellbook(){
+  const names = [];
+  deck.forEach(c=>{
+    const q=c.qty||1;
+    for(let i=0;i<q;i++) names.push(c.name);
+  });
+  return names;
+}
+
+async function fetchSpellbookCombos(payload){
+  const url="https://backend.commanderspellbook.com/find-my-combos";
+  // Tenta POST
+  try{
+    let res = await fetch(url,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    if(res.ok) return await res.json();
+  }catch(e){}
+  // Fallback GET com body (alguns servidores aceitam)
+  let res = await fetch(url,{
+    method:"GET",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error("Spellbook API falhou (CORS/rate limit?)");
+  return await res.json();
+}
+
+async function runSpellbook(){
+  if(deck.length===0){
+    alert("Deck vazio.");
+    return;
+  }
+  const sbStatus=document.getElementById("sbStatus");
+  const sbOut=document.getElementById("sbOut");
+  sbStatus.textContent="Consultando Commander Spellbook...";
+  sbOut.textContent="Aguarde...";
+  const names=getDeckNamesForSpellbook();
+  const minPieces=parseInt(document.getElementById("sbMinPieces").value,10)||2;
+  const maxPieces=parseInt(document.getElementById("sbMaxPieces").value,10)||4;
+  const format=document.getElementById("sbFormat").value;
+
+  const payload={
+    "cards": names,
+    "format": format,          // aceito pelo backend (se ignorar, tudo bem)
+    "min_pieces": minPieces,   // se backend ignorar, filtramos local também
+    "max_pieces": maxPieces
+  };
+
+  try{
+    const data = await fetchSpellbookCombos(payload);
+    // A resposta geralmente vem em data.results, mas vamos ser defensivos
+    const results = data.results || data.combos || data || [];
+    // Normaliza lista de combos
+    const combos = Array.isArray(results)? results : (results.combos || []);
+    spellbookLastResults = combos;
+
+    if(!combos.length){
+      sbStatus.textContent="Nenhum combo encontrado.";
+      sbOut.textContent="Nenhum combo encontrado no deck.";
+      return;
+    }
+
+    // Filtra por numero de pecas se o backend nao filtrou
+    const filtered = combos.filter(cb=>{
+      const cards = cb.cards || cb.c || cb.cards_required || [];
+      const n = cards.length;
+      return n>=minPieces && n<=maxPieces;
+    });
+
+    sbStatus.textContent=`Encontrados ${filtered.length} combos (de ${combos.length} retornados).`;
+
+    let text="";
+    filtered.forEach((cb,idx)=>{
+      const cards = cb.cards || cb.c || cb.cards_required || [];
+      const result = cb.result || cb.e || cb.effect || "";
+      const name = cb.name || cb.combo_name || `Combo ${idx+1}`;
+      text += `${idx+1}. ${name}\n   Pecas (${cards.length}): ${cards.join(" | ")}\n   Resultado: ${result}\n\n`;
+    });
+
+    sbOut.textContent=text.trim();
+  }catch(e){
+    sbStatus.textContent="Falha ao consultar Spellbook.";
+    sbOut.textContent=e.message;
+  }
+}
+
+function applySpellbookTags(){
+  if(!spellbookLastResults || !spellbookLastResults.length){
+    alert("Rode a busca de combos primeiro.");
+    return;
+  }
+  // Estratégia simples:
+  // - Para cada combo, marcamos a primeira peça como Combo A se ainda nao tiver,
+  //   a segunda como Combo B, terceira como Combo C.
+  const markMap = new Map(); // name -> max role rank
+  spellbookLastResults.forEach(cb=>{
+    const cards = cb.cards || cb.c || cb.cards_required || [];
+    if(cards[0]) markMap.set(cards[0], Math.max(markMap.get(cards[0])||0, 3));
+    if(cards[1]) markMap.set(cards[1], Math.max(markMap.get(cards[1])||0, 2));
+    if(cards[2]) markMap.set(cards[2], Math.max(markMap.get(cards[2])||0, 1));
+  });
+
+  deck = deck.map(c=>{
+    const rank = markMap.get(c.name)||0;
+    c.roleComboA = rank===3 || c.roleComboA;
+    c.roleComboB = rank===2 || c.roleComboB;
+    c.roleComboC = rank===1 || c.roleComboC;
+    return c;
+  });
+
+  saveDeck();
+  renderTable();
+  alert("Pecas marcadas como Combo A/B/C (auto). Ajuste manualmente se precisar.");
+}
+
+// ================================
+//  EDICAO RAPIDA DE CARTAS (POS-IMPORT)
+// ================================
+let editIndex = null;
+
+function openEditModal(idx){
+  editIndex = idx;
+  const c = deck[idx];
+  if(!c) return;
+
+  document.getElementById("editModalTitle").textContent = c.name + "  —  " + (c.typeLine||"");
+  document.getElementById("editQty").value = c.qty || 1;
+  document.getElementById("editCMC").value = c.cmc || 0;
+
+  document.getElementById("edit_isLand").checked = !!c.isLand;
+  document.getElementById("edit_ramp").checked = !!(c.roleRamp || c.rampBurst);
+  document.getElementById("edit_manaRock").checked = !!c.roleManaRock;
+  document.getElementById("edit_draw").checked = !!c.roleDraw;
+  document.getElementById("edit_interaction").checked = !!c.roleInteraction;
+  document.getElementById("edit_counter").checked = !!c.roleCounterspell;
+  document.getElementById("edit_removalSingle").checked = !!c.roleRemovalSingle;
+  document.getElementById("edit_removalGlobal").checked = !!c.roleRemovalGlobal;
+  document.getElementById("edit_tutor").checked = !!c.roleTutor;
+  document.getElementById("edit_protection").checked = !!c.roleProtection;
+  document.getElementById("edit_wincon").checked = !!c.roleWincon;
+  document.getElementById("edit_comboA").checked = !!c.roleComboA;
+  document.getElementById("edit_comboB").checked = !!c.roleComboB;
+  document.getElementById("edit_comboC").checked = !!c.roleComboC;
+
+  document.getElementById("editModalBackdrop").style.display="block";
+  document.getElementById("editModal").style.display="block";
+}
+
+function closeEditModal(){
+  document.getElementById("editModalBackdrop").style.display="none";
+  document.getElementById("editModal").style.display="none";
+  editIndex = null;
+}
+
+function saveEditModal(){
+  if(editIndex===null) return;
+  const c = deck[editIndex];
+  if(!c) return;
+
+  c.qty = parseInt(document.getElementById("editQty").value,10) || 1;
+
+  c.isLand = document.getElementById("edit_isLand").checked;
+
+  c.roleRamp = document.getElementById("edit_ramp").checked;
+  c.rampBurst = c.roleRamp ? (c.rampBurst || false) : false;
+  c.roleManaRock = document.getElementById("edit_manaRock").checked;
+
+  c.roleDraw = document.getElementById("edit_draw").checked;
+  c.roleInteraction = document.getElementById("edit_interaction").checked;
+  c.roleCounterspell = document.getElementById("edit_counter").checked;
+  c.roleRemovalSingle = document.getElementById("edit_removalSingle").checked;
+  c.roleRemovalGlobal = document.getElementById("edit_removalGlobal").checked;
+  c.roleTutor = document.getElementById("edit_tutor").checked;
+  c.roleProtection = document.getElementById("edit_protection").checked;
+  c.roleWincon = document.getElementById("edit_wincon").checked;
+  c.roleComboA = document.getElementById("edit_comboA").checked;
+  c.roleComboB = document.getElementById("edit_comboB").checked;
+  c.roleComboC = document.getElementById("edit_comboC").checked;
+
+  deck[editIndex]=c;
+  saveDeck();
+  renderTable();
+  closeEditModal();
+}
+
+// ================================
+//  EDICAO EM MASSA POR FILTRO
+// ================================
+let massSelected = new Set();
+let massFilteredIdx = [];
+
+function cardMatchesType(c, t){
+  if(t==="any") return true;
+  if(t==="land") return !!c.isLand;
+  if(t==="creature") return !!c.isCreature;
+  if(t==="artifact") return !!c.isArtifact;
+  if(t==="enchantment") return !!c.isEnchantment;
+  if(t==="instant") return !!c.isInstant;
+  if(t==="sorcery") return !!c.isSorcery;
+  if(t==="planeswalker") return !!c.isPlaneswalker;
+  return true;
+}
+function cardMatchesRole(c, r){
+  if(r==="any") return true;
+  if(r==="ramp") return !!(c.roleRamp||c.roleManaRock||c.rampBurst);
+  if(r==="draw") return !!c.roleDraw;
+  if(r==="interaction") return !!(c.roleInteraction||c.roleRemovalSingle||c.roleRemovalGlobal);
+  if(r==="counter") return !!c.roleCounterspell;
+  if(r==="tutor") return !!c.roleTutor;
+  if(r==="protection") return !!c.roleProtection;
+  if(r==="wincon") return !!c.roleWincon;
+  if(r==="comboA") return !!c.roleComboA;
+  if(r==="comboB") return !!c.roleComboB;
+  if(r==="comboC") return !!c.roleComboC;
+  return true;
+}
+
+function applyMassFilter(){
+  if(deck.length===0){
+    alert("Deck vazio.");
+    return;
+  }
+  const t=document.getElementById("massType").value;
+  const r=document.getElementById("massRole").value;
+  const cmcMin=parseFloat(document.getElementById("massCMCmin").value||0);
+  const cmcMax=parseFloat(document.getElementById("massCMCmax").value||99);
+  const q=(document.getElementById("massSearch").value||"").toLowerCase().trim();
+
+  massFilteredIdx = [];
+  massSelected.clear();
+
+  deck.forEach((c,idx)=>{
+    const cmc=c.cmc||0;
+    const name=(c.name||"").toLowerCase();
+    if(!cardMatchesType(c,t)) return;
+    if(!cardMatchesRole(c,r)) return;
+    if(cmc<cmcMin || cmc>cmcMax) return;
+    if(q && !name.includes(q)) return;
+    massFilteredIdx.push(idx);
+  });
+
+  renderMassList();
+}
+
+function renderMassList(){
+  const box=document.getElementById("massList");
+  const actions=document.getElementById("massActions");
+  if(massFilteredIdx.length===0){
+    box.innerHTML = "<p class='muted'>Nenhuma carta no filtro.</p>";
+    actions.style.display="none";
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th style="width:28px;"><input type="checkbox" id="massSelectAll" onchange="toggleMassSelectAll(this.checked)"></th>
+    <th>Nome</th><th>CMC</th><th>Tipo</th><th>Tags</th>
+  </tr></thead><tbody>`;
+
+  massFilteredIdx.forEach(idx=>{
+    const c=deck[idx];
+    const checked = massSelected.has(idx) ? "checked" : "";
+    let tags=[];
+    if(c.isLand) tags.push("Land");
+    if(c.roleRamp||c.roleManaRock||c.rampBurst) tags.push("Ramp");
+    if(c.roleDraw) tags.push("Draw");
+    if(c.roleInteraction||c.roleRemovalSingle||c.roleRemovalGlobal) tags.push("Inter");
+    if(c.roleCounterspell) tags.push("Counter");
+    if(c.roleTutor) tags.push("Tutor");
+    if(c.roleProtection) tags.push("Prot");
+    if(c.roleWincon) tags.push("Wincon");
+    if(c.roleComboA) tags.push("A");
+    if(c.roleComboB) tags.push("B");
+    if(c.roleComboC) tags.push("C");
+
+    html += `<tr>
+      <td><input type="checkbox" ${checked} onchange="toggleMassSelect(${idx}, this.checked)"></td>
+      <td>${c.name}</td>
+      <td>${c.cmc||0}</td>
+      <td>${c.typeLine||""}</td>
+      <td>${tags.join(", ")||"-"}</td>
+    </tr>`;
+  });
+
+  html += "</tbody></table>";
+  box.innerHTML = html;
+  actions.style.display="block";
+}
+
+function toggleMassSelect(idx, on){
+  if(on) massSelected.add(idx);
+  else massSelected.delete(idx);
+}
+
+function toggleMassSelectAll(on){
+  massSelected.clear();
+  if(on){
+    massFilteredIdx.forEach(i=>massSelected.add(i));
+  }
+  renderMassList();
+}
+
+// apply or remove tags from selected
+function massApplyTags(setOn){
+  if(massSelected.size===0){
+    alert("Selecione ao menos uma carta.");
+    return;
+  }
+  const setters = {
+    isLand: document.getElementById("mass_set_isLand").checked,
+    ramp: document.getElementById("mass_set_ramp").checked,
+    manaRock: document.getElementById("mass_set_manaRock").checked,
+    draw: document.getElementById("mass_set_draw").checked,
+    interaction: document.getElementById("mass_set_interaction").checked,
+    counter: document.getElementById("mass_set_counter").checked,
+    tutor: document.getElementById("mass_set_tutor").checked,
+    protection: document.getElementById("mass_set_protection").checked,
+    wincon: document.getElementById("mass_set_wincon").checked,
+    comboA: document.getElementById("mass_set_comboA").checked,
+    comboB: document.getElementById("mass_set_comboB").checked,
+    comboC: document.getElementById("mass_set_comboC").checked
+  };
+
+  massSelected.forEach(idx=>{
+    const c=deck[idx];
+    if(setters.isLand) c.isLand = setOn;
+    if(setters.ramp) c.roleRamp = setOn;
+    if(setters.manaRock) c.roleManaRock = setOn;
+    if(setters.draw) c.roleDraw = setOn;
+    if(setters.interaction) c.roleInteraction = setOn;
+    if(setters.counter) c.roleCounterspell = setOn;
+    if(setters.tutor) c.roleTutor = setOn;
+    if(setters.protection) c.roleProtection = setOn;
+    if(setters.wincon) c.roleWincon = setOn;
+    if(setters.comboA) c.roleComboA = setOn;
+    if(setters.comboB) c.roleComboB = setOn;
+    if(setters.comboC) c.roleComboC = setOn;
+    deck[idx]=c;
+  });
+
+  saveDeck();
+  renderTable();
+  renderMassList();
+  alert(setOn ? "Tags marcadas." : "Tags removidas.");
+}
+</script>
+</body>
+</html>
