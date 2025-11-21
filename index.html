@@ -1660,24 +1660,33 @@ function getDeckNamesForSpellbook(){
   return names;
 }
 
+
 async function fetchSpellbookCombos(payload){
+  // Commander Spellbook backend aceita POST com JSON.
+  // GET com body causa erro no browser (e.g., "GET/HEAD method cannot have body"),
+  // então aqui fazemos apenas POST e falhamos de forma explícita se não der.
   const url="https://backend.commanderspellbook.com/find-my-combos";
-  // Tenta POST
+
+  let res;
   try{
-    let res = await fetch(url,{
+    res = await fetch(url,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify(payload)
     });
-    if(res.ok) return await res.json();
-  }catch(e){}
-  // Fallback GET com body (alguns servidores aceitam)
-  let res = await fetch(url,{
-    method:"GET",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(payload)
-  });
-  if(!res.ok) throw new Error("Spellbook API falhou (CORS/rate limit?)");
+  }catch(e){
+    throw new Error("Falha de rede ao chamar Spellbook (sem internet ou bloqueio de CORS).");
+  }
+
+  if(!res.ok){
+    let msg = `Spellbook API retornou ${res.status}.`;
+    try{
+      const errJson = await res.json();
+      if(errJson && (errJson.error || errJson.message)) msg += " " + (errJson.error || errJson.message);
+    }catch(_){}
+    throw new Error(msg + " Pode ser rate limit ou CORS.");
+  }
+
   return await res.json();
 }
 
